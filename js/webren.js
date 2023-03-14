@@ -25,6 +25,7 @@ var frames = 0;
 var frames_last_second = 0;
 
 var show_inventory = false;
+var walk_cool_down = 0;
 
 // -- Functions
 
@@ -56,6 +57,8 @@ function doLoop() {
     render();
 
     player.tickStamina();
+    walkCoolDownTick();
+
     updateHud();
     
     frames++;
@@ -94,10 +97,11 @@ function initHud() {
 function updateHud() {
     hud_fps.textContent = "FPS: " + frames_last_second;
     hud_position.textContent = `Position: ${player.getPositionX} | ${player.getPositionY}`;
+    hud_hp.textContent = `HP: ${player.getCurrHp} \\ ${player.getMaxHp} `;
     if (player.getOverworked) {
-        hud_stamina.textContent = `Stamina: Overworked! | ${player.getCurrStamina} / ${player.getMaxStamina}`;
+        hud_stamina.textContent = `Stamina: Overworked! | ${player.getCurrStamina} \\ ${player.getMaxStamina}`;
     } else {
-        hud_stamina.textContent = `Stamina: ${player.getCurrStamina} / ${player.getMaxStamina}`;
+        hud_stamina.textContent = `Stamina: ${player.getCurrStamina} \\ ${player.getMaxStamina}`;
     }
 
     // inventory 
@@ -133,35 +137,50 @@ function onKeyUp(event) {
 }
 
 function movementUpdate(key) {
+    if (walk_cool_down > 0) return;
+
     var ppx = Math.floor(player.getPositionX);
     var ppy = Math.floor(player.getPositionY);
     var speed = 1;
+    var xMove = 0;
+    var yMove = 0;
     if(key == 'w') {
         player.setLastRotation = 0;
         if (ppy - 1 < 0) { return; }
         if (blocks.BLOCK_MAP[map[ppx][ppy - 1]].walkable == true) {
-            player.move(0, -speed);
+            yMove -= speed;
         }
         
-    } else if (key == 's') {
+    } 
+    if (key == 's') {
         player.setLastRotation = 1;
         if (ppy + 1 == mapHeight) { return; }
         if (blocks.BLOCK_MAP[map[ppx][ppy + 1]].walkable == true) {
-            player.move(0, speed);
+            yMove += speed;
         }
     }
     if (key == 'a') {
         player.setLastRotation = 2;
         if (ppx - 1 < 0) { return; }
         if (blocks.BLOCK_MAP[map[ppx - 1][ppy]].walkable == true) {
-            player.move(-speed, 0);
+            xMove -= speed;
         }
-    } else if (key == 'd') {
+    } 
+    if (key == 'd') {
         player.setLastRotation = 3;
         if (ppx + 1 == mapWidth) { return; }
         if (blocks.BLOCK_MAP[map[ppx + 1][ppy]].walkable == true) {
-            player.move(speed, 0);
+            xMove += speed;
         }
+    }
+
+    if (xMove != 0 || yMove != 0) {
+        var drain = blocks.BLOCK_MAP[map[ppx][ppy]].getWalkStaminaDrain;
+        if (player.getCurrStamina >= drain) {
+            walk_cool_down += drain + 3;
+            player.move(xMove, yMove);
+            player.subtractStamina(drain);
+        } 
     }
 
     if (player.getPositionX <= 0) { player.setPositionX = 0; }
@@ -170,6 +189,14 @@ function movementUpdate(key) {
     if (player.getPositionY <= 0) { player.setPositionY = 0; }
     if (player.getPositionY >= mapWidth) { player.setPositionY(mapWidth - 1); }
 
+}
+
+function walkCoolDownTick() {
+    if (walk_cool_down < 0) {
+        walk_cool_down = 0;
+    } else if (walk_cool_down > 0) { 
+        walk_cool_down -= 1;
+    }
 }
 
 function actionUpdate(key) {
