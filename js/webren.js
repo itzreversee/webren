@@ -208,6 +208,13 @@ function actionUpdate(key) {
         case 'e':
             blockBreakCheck();
             break;
+        case 'r':
+            var map_name = document.getElementById("map_name");
+            fetch(`../maps/${map_name.value}.json`)
+                .then(response => response.json())
+                .then(data => map = data['data'])
+                .catch(error => console.log(error));
+            break;
         default: break;
     }
 }
