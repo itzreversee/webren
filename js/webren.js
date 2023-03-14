@@ -123,6 +123,11 @@ function onKeyDown(event) {
     var name = event.key;
     var code = event.code;
 
+    var mapNameInput = document.getElementById('map_name');
+    if (document.activeElement == mapNameInput) {
+        return;
+    }
+    
     actionUpdate(name);
     movementUpdate(name);
 
@@ -132,7 +137,6 @@ function onKeyDown(event) {
 function onKeyUp(event) {
     var name = event.key;
     var code = event.code;
-
     //alert(`Key up: ${name} \r\n Key code: ${code}`);
 }
 
